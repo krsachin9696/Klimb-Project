@@ -19,7 +19,7 @@ uploadFormNode.addEventListener("submit", async function(event){
             console.log("Successful");
         }
         else if(response.status === 400){
-            console.log("Error");
+            console.log("The file was not uploaded");
         }else{
             console.log("An error occured");
         }
