@@ -1,8 +1,10 @@
 const express = require("express");
+const fs = require("fs");
 const multer = require("multer");
 const async=require('async');
 const XLSX = require('xlsx');
 const path = require('path');
+
 
 const app = express();
 
@@ -30,7 +32,7 @@ app.get("/script.js", (req, res) => {
 });
 
 
-app.post("/upload", upload.single("file"), async(req, res) => {
+app.post("/upload", upload.single("file"), (req, res) => {
     if(!req.file) {
         return res.status(400).json({error: "No file uploaded"});
     }
@@ -38,38 +40,62 @@ app.post("/upload", upload.single("file"), async(req, res) => {
     const uploadedFileName = req.file.filename;
     // console.log(uploadedFileName);
 
-    const filePath = './uploads/' + uploadedFileName;
+    const filepath = './uploads/' + uploadedFileName;
+    const filePath = path.join(__dirname, filepath);
     const workbook = XLSX.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const excelData = XLSX.utils.sheet_to_json(worksheet);
 
 
-    try {
-        await async.eachSeries(excelData, async (item) => {
-            const newEmployee = new employeemodel({
-                name: item.name,
-                email: item.email,
-                mobile: item.mobile,
-                dob: item.dob,
-                work_exp: item.work_exp,
-                resume_Title: item.resume_Title,
-                current_Location: item.current_Location,
-                postal_Address: item.postal_Address,
-                current_Employer: item.current_Employer,
-                current_Designation: item.current_Designation,
-            });
+    async.eachSeries(excelData, (item, callback) => {
 
-            await newEmployee.save();
-            console.log("Data saved:", item);
+        const keys=['name','email','mobile','dob','work_exp','resume_Title','current_Location','postal_Address','current_Employer','current_Designation'];
+        const data={};
+        let i=0;
+        for(k in item){
+            data[keys[i]]=item[k];
+            i++;
+        }
+
+        checkExists(item.Email).then(function(exist){
+            if(exist) {
+                console.log("hello")
+                callback();
+            } else {
+                employeemodel.create(data).then(function(data){
+                    callback();
+                }).catch(function(err){
+                    res.status(500).send("error");
+                });
+            }
+        }).catch(function(err){
+            res.status(500).send("error");
         });
 
-        return res.status(200).json({ message: "File uploaded successfully" });
-    } catch (error) {
-        console.error("An error occurred:", error);
-        return res.status(500).json({ error: "Internal server error" });
-    }
+        }, (err) => {
+            if (err) {
+                console.error('An error occurred:', err);
+                res.status(500).send("error");
+                return;
+            } else {
+                const path=filepath;
+                fs.unlink(path, (err) => {
+                    if (err) {
+                        console.error('Error deleting file:', err);
+                    } else {
+                        console.log('File deleted successfully!');
+                        res.status(200).send(true);
+                    }
+                });
+                console.log('All items processed');
+            }
+        });
 
-    
-    // return res.status(200).json({message: "File uploaded succesfully"});
-});
+    });
+
+    async function checkExists(data) {
+        const document = await employeemodel.findOne({email: data});
+        console.log(document);
+        return !!document; 
+      }
