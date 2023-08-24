@@ -13,5 +13,5 @@ const employee = new mongoos.Schema({
     current_Designation: String,
 });
 
-const emp = mongoos.model("candidateTable", employee);
+const emp = mongoos.model("employeeTable", employee);
 module.exports = emp;

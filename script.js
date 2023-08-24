@@ -1,5 +1,6 @@
 
 const uploadFormNode = document.getElementById("upload-form");
+let statusMessage = document.getElementById("status-message");
 
 uploadFormNode.addEventListener("submit", async function(event){
     event.preventDefault();
@@ -16,12 +17,15 @@ uploadFormNode.addEventListener("submit", async function(event){
         body: formData,
     }).then( (response) => {
         if(response.status === 200){
-            console.log("Successful");
+            statusMessage.textContent = "Data successfully uploaded on the Database!";
+            statusMessage.classList.add("success");
         }
         else if(response.status === 400){
-            console.log("The file was not uploaded");
+            statusMessage.textContent = "The file was not uploaded!";
+            statusMessage.classList.add("error");
         }else{
-            console.log("An error occured");
+            statusMessage.textContent = "An error occured!";
+            statusMessage.classList.add("error");
         }
     })
 });
